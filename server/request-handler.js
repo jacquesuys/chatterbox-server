@@ -33,12 +33,13 @@ var requestHandler = function(request, response) {
   var method = request.method;
   var url = request.url;
   var body = [];
+  var responseBody = {};
 
   // The outgoing status.
   var statusCode = 200;
 
   // See the note below about CORS headers.
-  var headers = defaultCorsHeaders;
+  headers = defaultCorsHeaders;
 
   // Tell the client we are sending them plain text.
   //
@@ -56,18 +57,13 @@ var requestHandler = function(request, response) {
 
     response.writeHead(statusCode, headers);
     
-    var responseBody = {
+    responseBody = {
       headers: headers,
       method: method,
       url: url,
       body: [],
       results: results
     };
-
-    if (response.write) {
-      response.write(JSON.stringify(responseBody));
-      response.end();
-    }
 
     response.end(JSON.stringify(responseBody));
     return;
@@ -76,19 +72,38 @@ var requestHandler = function(request, response) {
   if (method === "POST") {
     statusCode = 201;
 
-    request
-    .on('data', function(chunk){
-      body.push(chunk);
-    })
-    .on('end', function() {
-      
-      body = Buffer.concat(body).toString();
+    //if request._postData is an object, then push into results
+    //else:
+    if (typeof request._postData === 'object') {
+      results.push(request._postData);
+    } else {
+      request
+      .on('data', function(chunk){
+        body.push(chunk);
+      })
+      .on('end', function() {
+        
+        body = Buffer.concat(body).toString();
 
-      if (typeof body === 'string' && body.length > 0) {
-        body = JSON.parse(body);
-        results.push(body);
-      }
-    });
+        if (typeof body === 'string' && body.length > 0) {
+          body = JSON.parse(body);
+          results.push(body);
+        }
+      });
+    }
+
+    response.writeHead(statusCode, headers);
+
+    responseBody = {
+      headers: headers,
+      method: method,
+      url: url,
+      body: body,
+      results: results
+    };
+
+    response.end(JSON.stringify(responseBody));
+    return;
   }
 
   response.on('error', function(err) {
@@ -97,7 +112,7 @@ var requestHandler = function(request, response) {
 
   response.writeHead(statusCode, headers);
 
-  var responseBody = {
+  responseBody = {
     headers: headers,
     method: method,
     url: url,
@@ -105,8 +120,7 @@ var requestHandler = function(request, response) {
     results: results
   };
 
-  response.write(JSON.stringify(responseBody));
-  response.end();
+  response.end(JSON.stringify(responseBody));
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
