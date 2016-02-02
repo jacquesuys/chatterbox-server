@@ -1,3 +1,4 @@
+var fs = require('fs');
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -33,7 +34,12 @@ var requestHandler = function(request, response) {
   var method = request.method;
   var url = request.url;
   var body = [];
-  var responseBody = {};
+  var responseBody = {
+    headers: headers,
+    method: method,
+    results: results,
+    url: url
+  };
 
   // The outgoing status.
   var statusCode = 200;
@@ -51,19 +57,23 @@ var requestHandler = function(request, response) {
   headers['Content-Type'] = "application/json";
 
   if (method === "GET") {
+
     if (url === '/arglebargle') {
       statusCode = 404;
     }
 
+    if (url === '/') {
+      fs.readFile(__dirname + '/client/static.html', 'utf8', function(err, data) {
+        headers['Content-Type'] = "text/html";
+        response.writeHead(statusCode, headers);
+        response.end(data);
+        console.log(data);
+      });
+      return;
+
+    }
+
     response.writeHead(statusCode, headers);
-    
-    responseBody = {
-      headers: headers,
-      method: method,
-      url: url,
-      body: [],
-      results: results
-    };
 
     response.end(JSON.stringify(responseBody));
     return;
@@ -94,33 +104,11 @@ var requestHandler = function(request, response) {
 
     response.writeHead(statusCode, headers);
 
-    responseBody = {
-      headers: headers,
-      method: method,
-      url: url,
-      body: body,
-      results: results
-    };
+    responseBody.body = body;
 
     response.end(JSON.stringify(responseBody));
     return;
   }
-
-  response.on('error', function(err) {
-    console.error(err);
-  });
-
-  response.writeHead(statusCode, headers);
-
-  responseBody = {
-    headers: headers,
-    method: method,
-    url: url,
-    body: body,
-    results: results
-  };
-
-  response.end(JSON.stringify(responseBody));
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
