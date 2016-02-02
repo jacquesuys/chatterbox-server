@@ -44,47 +44,69 @@ var requestHandler = function(request, response) {
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
+
+  console.log('method', method);
+
   headers['Content-Type'] = "application/json";
 
-  request
-  .on('data', function(chunk){
-    body.push(chunk);
-  })
-  .on('end', function() {
-    
-    body = Buffer.concat(body).toString();
-
-    if (typeof body === 'string' && body.length > 0) {
-      body = JSON.parse(body);
-      results.push(body);
-    }
-
-    response.on('error', function(err) {
-      console.error(err);
-    });
-
-    if (method === "POST") {
-      statusCode = 201;
-    }
-
+  if (method === "GET") {
     if (url === '/arglebargle') {
-      statusCode = 404; 
+      statusCode = 404;
     }
 
-    // Note: the 2 lines above could be replaced with this next one:
     response.writeHead(statusCode, headers);
-
+    
     var responseBody = {
       headers: headers,
       method: method,
       url: url,
-      body: body,
+      body: [],
       results: results
     };
 
-    response.write(JSON.stringify(responseBody));
-    response.end();
+    if (response.write) {
+      response.write(JSON.stringify(responseBody));
+      response.end();
+    }
+
+    response.end(JSON.stringify(responseBody));
+    return;
+  }
+
+  if (method === "POST") {
+    statusCode = 201;
+
+    request
+    .on('data', function(chunk){
+      body.push(chunk);
+    })
+    .on('end', function() {
+      
+      body = Buffer.concat(body).toString();
+
+      if (typeof body === 'string' && body.length > 0) {
+        body = JSON.parse(body);
+        results.push(body);
+      }
+    });
+  }
+
+  response.on('error', function(err) {
+    console.error(err);
   });
+
+  response.writeHead(statusCode, headers);
+
+  var responseBody = {
+    headers: headers,
+    method: method,
+    url: url,
+    body: body,
+    results: results
+  };
+
+  response.write(JSON.stringify(responseBody));
+  response.end();
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.

@@ -11,6 +11,7 @@ describe('server', function() {
 
   it('should send back parsable stringified JSON', function(done) {
     request('http://127.0.0.1:3000/classes/messages', function(error, response, body) {
+      console.log('BODY',body);
       expect(JSON.parse.bind(this, body)).to.not.throw();
       done();
     });
