@@ -1,4 +1,5 @@
 var fs = require('fs');
+var path = require('path');
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -34,12 +35,17 @@ var requestHandler = function(request, response) {
   var method = request.method;
   var url = request.url;
   var body = [];
+
   var responseBody = {
     headers: headers,
     method: method,
     results: results,
     url: url
   };
+
+  var filePath;
+
+  var $log = __dirname + '/../client/log.txt';
 
   // The outgoing status.
   var statusCode = 200;
@@ -52,8 +58,6 @@ var requestHandler = function(request, response) {
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
 
-  console.log('method', method);
-
   headers['Content-Type'] = "application/json";
 
   if (method === "GET") {
@@ -62,20 +66,44 @@ var requestHandler = function(request, response) {
       statusCode = 404;
     }
 
-    if (url === '/') {
-      fs.readFile(__dirname + '/client/static.html', 'utf8', function(err, data) {
-        headers['Content-Type'] = "text/html";
-        response.writeHead(statusCode, headers);
-        response.end(data);
-        console.log(data);
-      });
-      return;
-
+    if (url === '/' || url === '/?username=anonymous') {
+      url = 'static.html';
     }
 
-    response.writeHead(statusCode, headers);
+    fs.exists($log, function(exists){
+      if (exists) {
 
-    response.end(JSON.stringify(responseBody));
+      fs.readFile($log, "utf8", function(error, data) {
+        console.log(data);
+      });     
+
+      } else {
+        fs.writeFile($log, "THIS IS A NEW LOG FILE", "utf8", function(error) {
+          if(error) return console.log(error);
+
+          console.log("New LOG file created");
+        }); 
+      }
+    });
+
+    filePath = __dirname + '/../client/' + url;
+
+    var extname = path.extname(filePath);
+
+    headers['Content-Type'] = "text/html";
+
+    if(extname === '.css') {
+      headers['Content-Type'] = "text/css";
+    }
+
+    if (extname === '.js') {
+      headers['Content-Type'] = "application/javascript";
+    }
+
+    fs.readFile(filePath, function(err, data) {  
+      response.writeHead(statusCode, headers);
+      response.end(data, 'utf8');
+    });
     return;
   }
 
