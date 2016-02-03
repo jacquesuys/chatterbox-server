@@ -93,16 +93,15 @@ var requestHandler = function(request, response) {
     headers['Content-Type'] = "text/html";
 
     if(extname === '.css') {
+      console.log('some css...');
       headers['Content-Type'] = "text/css";
-    }
-
-    if (extname === '.js') {
+    } else if (extname === '.js') {
       headers['Content-Type'] = "application/javascript";
     }
 
-    fs.readFile(filePath, function(err, data) {  
+    fs.readFile(filePath, 'utf8', function(err, data) {  
       response.writeHead(statusCode, headers);
-      response.end(data, 'utf8');
+      response.end(data);
     });
     return;
   }
